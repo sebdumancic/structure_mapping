@@ -1,0 +1,5 @@
+(in-microtheory atom)
+(greater (mass nucleus) (mass electron)) 
+(revolve-around electron nucleus)
+(opposite-sign (charge nucleus) (charge electron))
+(cause (opposite-sign (charge nucleus) (charge electron)) (attracts nucleus electron)) 

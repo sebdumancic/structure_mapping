@@ -1,0 +1,5 @@
+(in-microtheory SolarSystem)
+(greater (mass sun) (mass planet))
+(cause (and (greater (mass sun) (mass planet)) (attracts sun planet)) (revolve-around planet sun))
+(greater (temperature sun) (temperature planet))
+(cause (gravity (mass sun) (mass planet)) (attracts sun planet))
