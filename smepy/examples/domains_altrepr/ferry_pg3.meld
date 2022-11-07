@@ -27,7 +27,7 @@
 (param debark d-car)
 (param debark d-loc)
 (precon debark (apply1 car d-car))
-(precond debark (apply1 location d-loc))
+(precon debark (apply1 location d-loc))
 (precon debark (apply1 on d-car))
 (precon debark (apply1 at-ferry d-loc))
 (effect debark (apply2 at d-car d-loc))
