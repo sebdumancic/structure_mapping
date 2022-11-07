@@ -5,22 +5,23 @@ import reader
 class SME:
     """The main class that holds all
     the information of a structure mapping process."""
-    def __init__(self, base, target):
+    def __init__(self, base, target, max_mappings=3):
         self.base = base
         self.target = target
+        self.max_mappings = max_mappings
 
     def match(self):
         matches = create_all_possible_matches(self.base, self.target)
         #print matches
-        connect_matches(matches)
+        connect_matches(matches) 
         valid_matches = consistency_propagation(matches)
         #print valid_matches
         structural_evaluation(valid_matches)
-        kernel_mappings = find_kernel_mappings(valid_matches)
+        kernel_mappings = find_kernel_mappings(valid_matches) # kernel mappings are all root expressions
         #for km in kernel_mappings:
         #    print km
         #    print
-        global_mappings = greedy_merge(kernel_mappings)
+        global_mappings = greedy_merge(kernel_mappings, self.max_mappings)
         return global_mappings
 
 class Mapping:
@@ -161,6 +162,11 @@ def predicate_match_score(pred_1, pred_2):
         return 0.0
 
 def are_predicates_matchable(pred_1, pred_2):
+    """
+        Predicates are matchable if 
+            - they are both functions
+            - relations with the same name
+    """
     if pred_1.predicate_type != pred_2.predicate_type:
         return False
     elif pred_1.predicate_type == 'relation':
@@ -169,6 +175,11 @@ def are_predicates_matchable(pred_1, pred_2):
         return True
 
 def are_matchable(item_1, item_2):
+    """
+        Two items are matchable if
+            - both are expressions and their predicates are matchable
+            - both are entities
+    """
     is_exp_1 = isinstance(item_1, sc.Expression)
     is_exp_2 = isinstance(item_2, sc.Expression)
     if is_exp_1 and is_exp_2:
@@ -180,7 +191,12 @@ def are_matchable(item_1, item_2):
         return False
     
 # need to change the pair stuff into match stuff
+#TODO: add a possibility to pass a filter function as in SME
 def create_all_possible_matches(case_1, case_2):
+    """
+        Constructs possible match as a cross product of all items
+        for every pair, it checks whether it is a possible match
+    """
     exp_list_1 = case_1.expression_list
     exp_list_2 = case_2.expression_list
     matches = set()
@@ -191,6 +207,9 @@ def create_all_possible_matches(case_1, case_2):
     return list(matches)
     
 def match_expression(exp_1, exp_2):
+    """
+        Match the two expressions and their arguments (not predicates)
+    """
     pred_1 = exp_1.predicate
     pred_2 = exp_2.predicate
     args_1 = exp_1.args
@@ -203,6 +222,9 @@ def match_expression(exp_1, exp_2):
         return set()
 
 def connect_matches(matches):
+    """
+        This connects the matches such that an expression is a parent of its arguments
+    """
     match_dict = {}
     for match in matches:
         match_dict[(match.base, match.target)] = match
@@ -220,8 +242,11 @@ def connect_matches(matches):
                     match.is_incomplete = True
 
 def consistency_propagation(matches):
+    """
+    This creates a full mapping of a root expressions/kernels. These might not be complete -- they might not have all constants/entities of the domains
+    """
     match_graph = dict([(match, match.children) for match in matches])
-    ordered_from_leaves_matches = topological_sort(match_graph)
+    ordered_from_leaves_matches = topological_sort(match_graph) # ordered from leaves to roots
     
     for match in ordered_from_leaves_matches:
         match.mapping = Mapping([match])
@@ -237,24 +262,30 @@ def consistency_propagation(matches):
     return valid_matches
 
 def structural_evaluation(matches, trickle_down_factor=16):
+    """
+        Evaluates all found matches so far; computes the scores
+    """
     #assume matches are still topologically sorted,
     #otherwise should sort it first
     for match in matches:
         match.local_evaluation()
-    ordered_from_root_matches = matches[::-1]
+    ordered_from_root_matches = matches[::-1] # this inverts the topological sort so that the first expressions are the most complciated ones
 
     for match in ordered_from_root_matches:
         for child in match.children:
-            child.score += match.score * trickle_down_factor
+            child.score += match.score * trickle_down_factor # propagates the score from parent to children
             if child.score > 1.0:
                 child.score = 1.0
     
     for match in ordered_from_root_matches:
-        match.mapping.evaluate()
+        match.mapping.evaluate() # sum of scores of all matches within a mapping
 
     return matches
 
 def find_kernel_mappings(valid_matches):
+    """
+        Finds the kernels -- root expressions and their corresponding mapping
+    """
     root_matches = []
     for match in valid_matches:
         are_parents_valid = [not (parent in valid_matches) \
@@ -263,13 +294,13 @@ def find_kernel_mappings(valid_matches):
             root_matches.append(match)
     return [match.mapping.copy() for match in root_matches]
 
-def greedy_merge(kernel_mappings):
+def greedy_merge(kernel_mappings, num_mappings):
     sorted_k_mapping_list = sorted(kernel_mappings,
                                    key=(lambda mapping: mapping.score),
                                    reverse=True)
     global_mappings = []
     max_score = 0.0
-    while (len(global_mappings) < 3) and \
+    while (len(global_mappings) < num_mappings) and \
           (len(sorted_k_mapping_list) > 0):
         global_mapping = sorted_k_mapping_list[0]
         sorted_k_mapping_list.remove(global_mapping)

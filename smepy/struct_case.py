@@ -162,9 +162,10 @@ class Entity:
     
 class Predicate:
     """ """
-    def __init__(self, name, arity, predicate_type='relation'):
+    def __init__(self, name, arity, predicate_type='relation', commutative=False):
         self.name = name
         self.arity = arity
+        self.commutative = commutative
         if name[-2:] == 'Fn':
             self.predicate_type = 'function'
         else:
