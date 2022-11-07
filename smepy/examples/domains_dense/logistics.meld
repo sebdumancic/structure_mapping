@@ -1,0 +1,21 @@
+(in-microtheory logistics)
+(action
+    load
+    (precon (and (object l-o) (and (vehicle l-v) (and (location l-l) (and (at l-v l-l) (at l-o l-l))))))
+    (effects (and (in l-o l-v) (not (at l-o l-l))))
+)
+(action 
+    unload
+    (precon (and (object u-o) (and (vehicle u-v) (and (location u-l) (and (at u-v u-l) (in u-o u-v))))))    
+    (effects (and (at u-o u-l) (not (in u-o u-v))))
+)
+(action
+    drive
+    (precon (and (truck d-t) (and (location d-l1) (and (location d-l2) (and (at d-t d-l1) (and (loc d-l1 d-c) (loc d-l2 d-c))))))))
+    (effects (and (at d-t d-l2) (not (at d-t d-l1))))
+)
+(action 
+    fly
+    (precon (and (airplane f-p) (and (airport f-a1) (and (airport f-a2) (at f-p f-a1)))))
+    (effects (and (at f-p f-a2) (not (at f-p f-a1))))
+)
