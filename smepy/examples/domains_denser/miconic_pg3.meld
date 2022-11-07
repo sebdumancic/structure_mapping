@@ -1,0 +1,27 @@
+(in-microtheory miconic)
+
+(action 
+    board
+    (precon
+        (and (term1 floor b-f)
+            (and (term1 passenger b-p)
+                (and (term1 lift-at b-f)
+                    (and (term2 origin b-p b-f)
+                        (term1 boarded b-p))))))
+    (effects (term1 boarded b-p))
+    )
+(action 
+    depart
+    (precon (and (term1 floor d-f) (and (term1 pasenger d-b) (and (term1 lift-at d-f) (and (term2 destin d-b d-f) (term1 boarded d-p))))))
+    (effects (and (not (term1 boarded d-p)) (term1 served d-p)))
+    )
+(action
+    up
+    (precon (and (term1 floor u-f1) (and (term1 floor u-f2) (and (term1 lift-at u-f1) (term2 above u-f1 u-f2)))))
+    (effects (and (term1 lift-at u-f2) (not (term1 lift-at u-f1))))
+    )
+(action
+    down
+    (precon (and (term1 floor do-f1) (and (term1 floor do-f2) (and (term1 lift-at do-f1) (term2 above do-f2 do-f1)))))
+    (effects (and (term1 lift-at do-f2) (not (term1 lift-at do-f1))))
+    )
