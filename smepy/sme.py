@@ -294,33 +294,6 @@ def needs_refinement(cmatch, substitutions):
     """
     return any([c in substitutions for c in cmatch.children])
 
-def plot_graph(matches):
-    import networkx as nx
-    import matplotlib.pyplot as plt
-
-    edges = []
-    for item in matches:
-        for ch in item.children:
-            edges.append((repr(item), repr(ch)))
-
-    G = nx.DiGraph()
-    G.add_edges_from(edges)
-
-    for layer, nodes in enumerate(nx.topological_generations(G)):
-        # `multipartite_layout` expects the layer as a node attribute, so add the
-        # numeric layer value as a node attribute
-        for node in nodes:
-            G.nodes[node]["layer"] = layer
-
-    # Compute the multipartite_layout using the "layer" node attribute
-    pos = nx.multipartite_layout(G, subset_key="layer")
-
-    #pos = nx.kamada_kawai_layout(G)
-    nx.draw_networkx_nodes(G, pos, node_size = 500)
-    nx.draw_networkx_labels(G, pos)
-    nx.draw_networkx_edges(G, pos,  arrows=True)
-    plt.show()
-
 def inspect_matches(matches):
     for ind, item in enumerate(matches): print(ind,": ", item, "\n\t", "\n\t".join([str(x) for x in item.children]))
 
