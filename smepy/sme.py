@@ -13,16 +13,11 @@ class SME:
 
     def match(self):
         matches = create_all_possible_matches(self.base, self.target)
-        #print matches
         connect_matches(matches) 
         matches = decouple_matches(matches)
         valid_matches = consistency_propagation(matches)
-        #print valid_matches
         structural_evaluation(valid_matches)
         kernel_mappings = find_kernel_mappings(valid_matches) # kernel mappings are all root expressions
-        #for km in kernel_mappings:
-        #    print km
-        #    print
         global_mappings = greedy_merge(kernel_mappings, self.max_mappings)
         return global_mappings
 
@@ -105,8 +100,16 @@ class Mapping:
                 pass
             elif isinstance(match.base, sc.Entity):
                 entity_matches.append(match)
-        entity_matches_str = ', '.join(map(repr, entity_matches))
-        return 'entity mappings:\n' + entity_matches_str    
+        return entity_matches  
+
+    def expression_matches(self):
+        entity_matches = []
+        for match in self.matches:
+            if isinstance(match.base, sc.Expression):
+                entity_matches.append(match)
+            elif isinstance(match.base, sc.Entity):
+                pass
+        return entity_matches  
 
 
     def __str__(self):
@@ -362,7 +365,7 @@ def consistency_propagation(matches):
     This creates a full mapping of a root expressions/kernels. These might not be complete -- they might not have all constants/entities of the domains
     """
     match_graph = dict([(match, match.children) for match in matches])
-    ordered_from_leaves_matches = topological_sort(match_graph) # ordered from leaves to roots
+    ordered_from_leaves_matches = matches #topological_sort(match_graph) # ordered from leaves to roots
     
     for match in ordered_from_leaves_matches:
         match.mapping = Mapping([match])

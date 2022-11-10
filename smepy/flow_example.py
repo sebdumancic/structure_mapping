@@ -12,7 +12,10 @@ def main():
     sme_1 = sme.SME(water_flow, heat_flow, max_mappings=5)
     gms = sme_1.match()
     for gm in gms:
-        print(gm.entity_matches())
+        print("Entity mappings:")
+        for ind, item in enumerate(gm.entity_matches()): print(ind, ": ", item)
+        # print("Expressions mappings:")
+        # for ind, item in enumerate(gm.expression_matches()): print(ind, ": ", item)
         print(gm.score)
         print("\n")
 
