@@ -1,6 +1,7 @@
 import struct_case as sc
 import copy
 import reader
+import itertools
 
 class SME:
     """The main class that holds all
@@ -14,6 +15,7 @@ class SME:
         matches = create_all_possible_matches(self.base, self.target)
         #print matches
         connect_matches(matches) 
+        matches = decouple_matches(matches)
         valid_matches = consistency_propagation(matches)
         #print valid_matches
         structural_evaluation(valid_matches)
@@ -112,7 +114,7 @@ class Mapping:
         
 class Match:
     """ """
-    def __init__(self, base, target, score=0.0):
+    def __init__(self, base, target, score=0.0, instance_counter=1):
         self.base = base
         self.target = target
         self.score = score
@@ -121,12 +123,20 @@ class Match:
         self.mapping = None
         self.is_incomplete = False
         self.is_inconsistent = False
+        self.is_commutative = False # if true, then there are multiple candidates for each child
+        self.instance = instance_counter
         
     def add_parent(self, parent):
         self.parents.append(parent)
 
+    def remove_parent(self, parent):
+        self.parents.remove(parent)
+
     def add_child(self, child):
         self.children.append(child)
+
+    def remove_child(self, child):
+        self.children.remove(child)
         
     def local_evaluation(self):
         if isinstance(self.base, sc.Expression):
@@ -135,14 +145,29 @@ class Match:
         else:
             self.score = 0.0
         return self.score
+
+    def copy(self):
+        nm = Match(self.base, self.target)
+        nm.score = self.score
+        nm.children = self.children
+        nm.parents = self.parents
+        nm.mapping = self.mapping
+        nm.is_incomplete = self.is_incomplete
+        nm.is_inconsistent = self.is_inconsistent
+        nm.is_commutative = self.is_commutative
+        nm.instance = self.instance
+
+        return nm
+
         
     def __repr__(self):
-        return '('+repr(self.base)+' -- '+repr(self.target)+')'        
+        return '('+repr(self.base)+' -- '+repr(self.target)+')' + '[' + repr(self.instance) + ']'    
 
     def __eq__(self, other):
         return isinstance(other, Match) and\
             (self.base == other.base) and \
-            (self.target == other.target)
+            (self.target == other.target) and \
+            (self.instance == other.instance)
 
     def __hash__(self):
         return hash(repr(self))
@@ -224,6 +249,8 @@ def match_expression(exp_1, exp_2):
 def connect_matches(matches):
     """
         This connects the matches such that an expression is a parent of its arguments
+
+        % commutativity enters here: a commutative predicate can match arguments in any order
     """
     match_dict = {}
     for match in matches:
@@ -232,7 +259,14 @@ def connect_matches(matches):
         base = match.base
         target = match.target
         if isinstance(base, sc.Expression):
-            arg_pair_list = zip(base.args, target.args)
+            if not (base.predicate.is_commutative() or target.predicate.is_commutative()):
+                # if no involved predicates are commutative, do arg-by-arg match
+                arg_pair_list = zip(base.args, target.args)
+            else:
+                # if at least one predicate is commutative, do the cross product of args
+                arg_pair_list = [(x,y) for x in base.args for y in target.args]
+                match.is_commutative = True
+
             for arg_pair in arg_pair_list:
                 if arg_pair in match_dict:
                     child_match = match_dict[arg_pair]
@@ -240,6 +274,100 @@ def connect_matches(matches):
                     match.add_child(child_match)
                 else:
                     match.is_incomplete = True
+
+def needs_refinement(cmatch, substitutions):
+    """
+        A match needs refinement if any of its children need refinement
+    """
+    return any([c in substitutions for c in cmatch.children])
+
+def plot_graph(matches):
+    import networkx as nx
+    import matplotlib.pyplot as plt
+
+    edges = []
+    for item in matches:
+        for ch in item.children:
+            edges.append((repr(item), repr(ch)))
+
+    G = nx.DiGraph()
+    G.add_edges_from(edges)
+
+    for layer, nodes in enumerate(nx.topological_generations(G)):
+        # `multipartite_layout` expects the layer as a node attribute, so add the
+        # numeric layer value as a node attribute
+        for node in nodes:
+            G.nodes[node]["layer"] = layer
+
+    # Compute the multipartite_layout using the "layer" node attribute
+    pos = nx.multipartite_layout(G, subset_key="layer")
+
+    #pos = nx.kamada_kawai_layout(G)
+    nx.draw_networkx_nodes(G, pos, node_size = 500)
+    nx.draw_networkx_labels(G, pos)
+    nx.draw_networkx_edges(G, pos,  arrows=True)
+    plt.show()
+
+def inspect_matches(matches):
+    for ind, item in enumerate(matches): print(ind,": ", item, "\n\t", "\n\t".join([str(x) for x in item.children]))
+
+
+def decouple_matches(matches):
+    """
+        Turns a match graph in with a match can have potentially multiple children for the same argument
+            into a graph that has only one child per argument
+    """
+    match_graph = dict([(match, match.children) for match in matches])
+    ordered_from_leaves_matches = topological_sort(match_graph) # ordered from leaves to roots
+
+    new_matches = []  # new matches that will be returned
+    substitutions = {}   # re-representation of matches
+    refinements = {}  # matches that have been split
+
+    for match in ordered_from_leaves_matches:
+        if match.is_commutative or needs_refinement(match, refinements):
+            # if the match is commutative
+            child_groups = {}
+            for child in match.children:
+                k = child.base
+                if child in refinements:
+                    child_groups[k] = child_groups.get(k, []) + refinements[child]
+                else:
+                    child_groups[k] = child_groups.get(k, []) + [child]
+
+            variants = []
+
+            for ind, children in enumerate(itertools.product(*list(child_groups.values()))):
+                nm = match.copy()
+                nm.instance = ind + 1
+                nm.children = [substitutions[c] for c in children]
+                nm.parents = []
+                variants.append(nm)
+
+                # connect children
+                for ch in nm.children:
+                    ch.add_parent(nm)
+
+            refinements[match] = variants
+            for v in variants:
+                substitutions[v] = v # for sake of easier retrieval later on
+
+            new_matches = new_matches + variants
+        else:
+            # make a copy and add to new matches
+            #  map the children and remove the parents (those will be added later)
+            nm = match.copy()
+            nm.parents = [] # will be added laster
+            nm.children = [substitutions[c] for c in match.children]
+            substitutions[match] = nm
+
+            # connect the parent relation to children
+            for ch in nm.children:
+                ch.add_parent(nm)
+
+            new_matches.append(nm)
+
+    return new_matches
 
 def consistency_propagation(matches):
     """
@@ -256,7 +384,7 @@ def consistency_propagation(matches):
             else:
                 match.is_inconsistent = True
                 break
-    valid_matches = [match for match in matches \
+    valid_matches = [match for match in ordered_from_leaves_matches \
                      if (not (match.is_incomplete or
                               match.is_inconsistent))]
     return valid_matches

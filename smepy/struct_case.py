@@ -8,12 +8,14 @@ def get_hash_name(item):
 
 class StructCase:
     """A case is a nugget containing entities and expressions."""
-    def __init__(self, exp_info_list, name=None):
+    def __init__(self, exp_info_list, name=None, commutative_preds={}):   # commutative preds should be a dict pred_name -> arity
         self.items = {}
+        self.commutative_preds = commutative_preds
         for exp_info in exp_info_list:
             self.add(exp_info)
         self.vocab = current_vocab
         self.name = name
+        
     
     @property
     def expression_list(self):
@@ -43,9 +45,9 @@ class StructCase:
     def add(self, item):
         if not item in self:
             if isinstance(item, list):
-                return self.add_s_exp_w((item, 1.0))
+                return self.add_s_exp_w((item, 1.0), commutative_preds=self.commutative_preds)
             elif isinstance(item, tuple):
-                return self.add_s_exp_w(item)
+                return self.add_s_exp_w(item, commutative_preds=self.commutative_preds)
             elif isinstance(item, str):
                 return self.add_entity(Entity(item))
             elif isinstance(item, Expression):
@@ -57,9 +59,9 @@ class StructCase:
         else:
             return self[item]
 
-    def add_s_exp_w(self, s_exp_w):
+    def add_s_exp_w(self, s_exp_w, commutative_preds={}):
         s_exp, w = s_exp_w
-        new_expression = Expression(self, s_exp, w)
+        new_expression = Expression(self, s_exp, w, commutative_preds=commutative_preds)
         self.items[new_expression.name] = new_expression
         return new_expression
 
@@ -101,7 +103,7 @@ class Expression:
     """Short for expression.
     A expression states a relation about some entities."""
     def __init__(self, case, s_exp, weight=1.0, \
-                 create_new_pred=True, evidences=None):
+                 create_new_pred=True, evidences=None, commutative_preds={}):
         pred_name = s_exp[0]
         arg_list = s_exp[1:]
         num_of_args = len(arg_list)
@@ -109,7 +111,10 @@ class Expression:
         if pred_name in current_vocab:
             self.predicate = current_vocab[pred_name]
         elif create_new_pred:
-            self.predicate = current_vocab.add(pred_name, num_of_args)
+            if pred_name in commutative_preds and commutative_preds[pred_name] == num_of_args:
+                self.predicate = current_vocab.add(pred_name, num_of_args, commutative=True)
+            else:
+                self.predicate = current_vocab.add(pred_name, num_of_args)
         else:
             print('Unknown predicate', pred_name)
             raise KeyError
@@ -145,6 +150,7 @@ class Expression:
         new_copy.evidences = copy.copy(self.evidences)
         return new_copy
     
+#TODO: make a distinction between entities and constants?
 class Entity: 
     """ """
     def __init__(self, name):
@@ -168,12 +174,16 @@ class Predicate:
         self.commutative = commutative
         if name[-2:] == 'Fn':
             self.predicate_type = 'function'
+            self.commutative = False
         else:
             self.predicate_type = predicate_type
         
     @property
     def list_form(self):
         return self.name
+
+    def is_commutative(self):
+        return self.commutative
         
     def __repr__(self):
         return '<' + self.name + '>'
@@ -183,8 +193,8 @@ class Vocabulary:
     def __init__(self):
         self.p_dict = {}
 
-    def add(self, pred_name, arity):
-        new_pred = Predicate(pred_name, arity)
+    def add(self, pred_name, arity, commutative=False):
+        new_pred = Predicate(pred_name, arity, commutative=commutative)
         self.p_dict[pred_name] = new_pred
         return new_pred
 
