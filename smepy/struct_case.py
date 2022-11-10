@@ -8,9 +8,8 @@ def get_hash_name(item):
 
 class StructCase:
     """A case is a nugget containing entities and expressions."""
-    def __init__(self, exp_info_list, name=None, commutative_preds={}):   # commutative preds should be a dict pred_name -> arity
+    def __init__(self, exp_info_list, name=None):   # commutative preds should be a dict pred_name -> arity
         self.items = {}
-        self.commutative_preds = commutative_preds
         for exp_info in exp_info_list:
             self.add(exp_info)
         self.vocab = current_vocab
@@ -45,9 +44,9 @@ class StructCase:
     def add(self, item):
         if not item in self:
             if isinstance(item, list):
-                return self.add_s_exp_w((item, 1.0), commutative_preds=self.commutative_preds)
+                return self.add_s_exp_w((item, 1.0))
             elif isinstance(item, tuple):
-                return self.add_s_exp_w(item, commutative_preds=self.commutative_preds)
+                return self.add_s_exp_w(item)
             elif isinstance(item, str):
                 return self.add_entity(Entity(item))
             elif isinstance(item, Expression):
@@ -59,9 +58,9 @@ class StructCase:
         else:
             return self[item]
 
-    def add_s_exp_w(self, s_exp_w, commutative_preds={}):
+    def add_s_exp_w(self, s_exp_w):
         s_exp, w = s_exp_w
-        new_expression = Expression(self, s_exp, w, commutative_preds=commutative_preds)
+        new_expression = Expression(self, s_exp, w)
         self.items[new_expression.name] = new_expression
         return new_expression
 
@@ -103,7 +102,7 @@ class Expression:
     """Short for expression.
     A expression states a relation about some entities."""
     def __init__(self, case, s_exp, weight=1.0, \
-                 create_new_pred=True, evidences=None, commutative_preds={}):
+                 create_new_pred=True, evidences=None):
         pred_name = s_exp[0]
         arg_list = s_exp[1:]
         num_of_args = len(arg_list)
@@ -111,10 +110,8 @@ class Expression:
         if pred_name in current_vocab:
             self.predicate = current_vocab[pred_name]
         elif create_new_pred:
-            if pred_name in commutative_preds and commutative_preds[pred_name] == num_of_args:
-                self.predicate = current_vocab.add(pred_name, num_of_args, commutative=True)
-            else:
-                self.predicate = current_vocab.add(pred_name, num_of_args)
+            # if it is commutative or n-ary, it will already be in vocab
+            self.predicate = current_vocab.add(pred_name, num_of_args)
         else:
             print('Unknown predicate', pred_name)
             raise KeyError
@@ -184,6 +181,9 @@ class Predicate:
 
     def is_commutative(self):
         return self.commutative
+
+    def is_nary(self):
+        return self.arity == -1
         
     def __repr__(self):
         return '<' + self.name + '>'
@@ -226,6 +226,9 @@ class Vocabulary:
         return '<' + repr(self.p_dict) + '>'
 
 current_vocab = Vocabulary()
+
+def declare_commutative(name, num_args):
+    current_vocab.add(name, num_args, commutative=True)
 
 
 #test examples
