@@ -12,6 +12,6 @@
 (action 
 		drop
 		(precon (and (term1 ball d-obj) (and (term1 room d-room) (and (term1 gripper d-gripper) (and (term2 carry d-obj d-gripper) (term1 at-robby d-room))))))
-        (effects (and (term2 at d-obj d-room) (and (free d-gripper) (not (carry d-obj d-gripper)))))
+        (effects (and (term2 at d-obj d-room) (and (term1 free d-gripper) (not (term2 carry d-obj d-gripper)))))
 	)
 
