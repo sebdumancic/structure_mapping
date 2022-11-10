@@ -1,6 +1,6 @@
 (in-microtheory gripper)
 (action
  		move
-		(precon  (and (term1 room m-to) (term1 at-robby m-from)) )
+		(precon  (and (term1 room m-to) (term1 at-robby m-from) (term1 room m-to2) (term1 at-robby m-from2)))
  		(effects (and (term1 at-robby m-to) (not (term1 at-robby m-from))))
 	)

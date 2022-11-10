@@ -1,6 +1,6 @@
 (in-microtheory ferry)
 (action
 		sail
-		(precon (and (term1 at-ferry s-from) (term1 location s-to)))
+		(precon (and (term1 location s-to) (term1 at-ferry s-from)))
 		(effects (and (term1 at-ferry s-to) (not (term1 at-ferry s-from))))
 	)

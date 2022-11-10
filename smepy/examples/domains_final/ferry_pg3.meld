@@ -1,0 +1,17 @@
+(in-microtheory ferry)
+(action
+		sail
+		(precon (and (term2 not-eq s-from s-to) (term1 location s-from) (term1 location s-to) (term1 at-ferry s-from) ) )
+		(effects (and (term1 at-ferry s-to) (not (term1 at-ferry s-from)) ) )
+	)
+(action
+		board
+		(precon (and (term1 car b-car) (term1 location b-loc) (term2 at b-car b-loc) (term1 at-ferry b-loc) (term0 empty-ferry) ) )
+		(effects (and (term1 on b-car) (not (term2 at b-car b-loc)) (not (term0 empty-ferry)) ) )
+	)
+(action
+		debark
+		(precon (and (term1 car de-car) (term1 location de-loc) (term1 on de-car) (term1 at-ferry de-loc) ) )
+     	(effects (and (term2 at de-car de-loc) (term0 empty-ferry) (not (term1 on de-car)) ) )
+	)
+

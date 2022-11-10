@@ -98,6 +98,17 @@ class Mapping:
         new_mapping.score = self.score
         return new_mapping
 
+    def entity_matches(self):
+        entity_matches = []
+        for match in self.matches:
+            if isinstance(match.base, sc.Expression):
+                pass
+            elif isinstance(match.base, sc.Entity):
+                entity_matches.append(match)
+        entity_matches_str = ', '.join(map(repr, entity_matches))
+        return 'entity mappings:\n' + entity_matches_str    
+
+
     def __str__(self):
         entity_matches = []
         expression_matches = []
@@ -125,6 +136,7 @@ class Match:
         self.is_inconsistent = False
         self.is_commutative = False # if true, then there are multiple candidates for each child
         self.instance = instance_counter
+        self.is_nary = len(base.args) != len(target.args) if isinstance(base, sc.Expression) else False
         
     def add_parent(self, parent):
         self.parents.append(parent)
@@ -251,6 +263,7 @@ def connect_matches(matches):
         This connects the matches such that an expression is a parent of its arguments
 
         % commutativity enters here: a commutative predicate can match arguments in any order
+        % n-ary-ness also enters here: we treat it as a commutative 
     """
     match_dict = {}
     for match in matches:
@@ -329,7 +342,9 @@ def decouple_matches(matches):
             # if the match is commutative
             child_groups = {}
             for child in match.children:
-                k = child.base
+                # this check is needed for nary predicates -- we want to match all arguments of the smaller expression, therefore we organise the children according to the target elements
+                k = child.target if (isinstance(match.base, sc.Expression) and len(match.base.args) > len(match.target.args)) else child.base
+
                 if child in refinements:
                     child_groups[k] = child_groups.get(k, []) + refinements[child]
                 else:

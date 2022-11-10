@@ -1,0 +1,17 @@
+(in-microtheory delivery)
+
+(action
+    pick-up
+    (precon (and (term1 location pu-loc)  (term1 paper pu-paper) (term1 dat pu-loc) (term1 isHomeBase pu-loc) (term1 unpacked pu-paper) ) )
+    (effects (and (not (term1 unpacked pu-paper)) (term1 carrying pu-paper) ) )
+    )
+(action 
+    move
+    (precon (and (term1 location m-from) (term1 location m-to) (term1 dat m-from) (term1 safe m-from) ) )
+    (effects (and (not (term1 dat m-from)) (term1 dat m-to) ) )
+    )
+(action
+    deliver
+    (precon (and (term1 location d-loc) (term1 paper d-paper) (term1 dat d-loc) (term1 carrying d-paper) ) )
+    (effects (and (not (term1 carrying d-paper)) (not (term1 wantsPaper d-loc)) (term1 satisfied d-loc) ) )
+    )

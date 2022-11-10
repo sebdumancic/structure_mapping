@@ -3,15 +3,16 @@ import sme
 import reader
 
 def main():
-    name, facts = reader.read_meld_file('examples/domains_dense/gripper_pg3.meld')
+    sc.declare_nary("and")
+    name, facts = reader.read_meld_file('examples/domains_final/gripper_pg3.meld')
     water_flow = sc.StructCase(facts, name)
-    name, facts = reader.read_meld_file('examples/domains_dense/ferry_pg3.meld')
+    name, facts = reader.read_meld_file('examples/domains_final/ferry_pg3.meld')
     heat_flow = sc.StructCase(facts, name)
 
-    sme_1 = sme.SME(water_flow, heat_flow)
+    sme_1 = sme.SME(water_flow, heat_flow, max_mappings=5)
     gms = sme_1.match()
     for gm in gms:
-        print(gm)
+        print(gm.entity_matches())
         print(gm.score)
         print("\n")
 

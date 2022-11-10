@@ -220,7 +220,11 @@ class Vocabulary:
             print('Unknown predicate', pred_name)
             raise KeyError
         else:
-            return self.p_dict[pred_name].arity == arity
+            if self.p_dict[pred_name].arity == -1:
+                #. -1 indicate that the predicate is n-ary
+                return True
+            else:
+                return self.p_dict[pred_name].arity == arity
 
     def __repr__(self):
         return '<' + repr(self.p_dict) + '>'
@@ -229,6 +233,10 @@ current_vocab = Vocabulary()
 
 def declare_commutative(name, num_args):
     current_vocab.add(name, num_args, commutative=True)
+
+def declare_nary(name):
+    # we assume that n-ary predicate is always commutative
+    current_vocab.add(name, -1, commutative=True)
 
 
 #test examples
