@@ -1,0 +1,17 @@
+(in-microtheory gripper)
+(action
+ 		move
+		(precon (and (term room m-from) (term room m-to) (term at-robby m-from) ) )
+ 		(effects (and (term at-robby m-to) (not (term at-robby m-from)) ) )
+	)
+(action 
+		pick
+		(precon (and (term ball p-obj) (term room p-room) (term gripper p-gripper) (term at p-obj p-room) (term at-robby p-room) (term free p-gripper) ) )
+		(effects (and (term carry p-obj p-gripper) (not (term at p-obj p-room)) (not (term free p-gripper)) ) )	
+	)
+(action 
+		drop
+		(precon (and (term ball d-obj) (term room d-room) (term gripper d-gripper) (term carry d-obj d-gripper) (term at-robby d-room) ) )
+        (effects (and (term at d-obj d-room) (term free d-gripper) (not (term carry d-obj d-gripper)) ) )
+	)
+
