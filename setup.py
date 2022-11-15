@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='smepy',
-    version='0.1.0',    
+    version='0.1.1',    
     description='A Python implementation of the structure-mapping engine',
     url='https://github.com/sebdumancic/analogical_planning',
     author='',

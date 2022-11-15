@@ -327,7 +327,10 @@ def decouple_matches(matches):
 
             variants = []
 
-            for ind, children in enumerate(itertools.product(*list(child_groups.values()))):
+            #xx = list(child_groups.values())
+            xx = sorted(child_groups.values(), key=str)
+
+            for ind, children in enumerate(itertools.product(*xx)):
                 nm = match.copy()
                 nm.instance = ind + 1
                 nm.children = [substitutions[c] for c in children]
