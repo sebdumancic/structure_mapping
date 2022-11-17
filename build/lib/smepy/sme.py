@@ -243,7 +243,7 @@ def create_all_possible_matches(case_1, case_2):
         for exp_2 in exp_list_2:
             new_matches = match_expression(exp_1, exp_2)
             matches = set.union(matches, new_matches)
-    return list(matches)
+    return sorted(matches, key=str)
     
 def match_expression(exp_1, exp_2):
     """
@@ -327,7 +327,10 @@ def decouple_matches(matches):
 
             variants = []
 
-            for ind, children in enumerate(itertools.product(*list(child_groups.values()))):
+            #xx = list(child_groups.values())
+            xx = sorted(child_groups.values(), key=str)
+
+            for ind, children in enumerate(itertools.product(*xx)):
                 nm = match.copy()
                 nm.instance = ind + 1
                 nm.children = [substitutions[c] for c in children]

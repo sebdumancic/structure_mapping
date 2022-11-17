@@ -2,9 +2,9 @@ import smepy
 
 def main():
     smepy.declare_nary("and")
-    name, facts = smepy.read_meld_file('domains_final/gripper_pg3.meld')
+    name, facts = smepy.read_meld_file('atom.meld')
     water_flow = smepy.StructCase(facts, name)
-    name, facts = smepy.read_meld_file('domains_final/ferry_pg3.meld')
+    name, facts = smepy.read_meld_file('solar_system.meld')
     heat_flow = smepy.StructCase(facts, name)
 
     sme_1 = smepy.SME(water_flow, heat_flow, max_mappings=5)
