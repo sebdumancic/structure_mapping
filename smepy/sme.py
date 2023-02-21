@@ -5,13 +5,16 @@ import itertools
 class SME:
     """The main class that holds all
     the information of a structure mapping process."""
-    def __init__(self, base, target, max_mappings=3):
+    def __init__(self, base, target, max_mappings=3, forced_matches=None):
         self.base = base
         self.target = target
         self.max_mappings = max_mappings
+         # a dict with base -> target  matches that should be forced
+        self.force_matches = {} if forced_matches is None else {sc.Entity(k): sc.Entity(v) for k,v in forced_matches.items()} 
+
 
     def match(self):
-        matches = create_all_possible_matches(self.base, self.target)
+        matches = create_all_possible_matches(self.base, self.target, self.force_matches)
         connect_matches(matches) 
         matches = decouple_matches(matches)
         valid_matches = consistency_propagation(matches)
@@ -213,7 +216,7 @@ def are_predicates_matchable(pred_1, pred_2):
     else:
         return True
 
-def are_matchable(item_1, item_2):
+def are_matchable(item_1, item_2, forced_matches):
     """
         Two items are matchable if
             - both are expressions and their predicates are matchable
@@ -225,13 +228,15 @@ def are_matchable(item_1, item_2):
         return are_predicates_matchable(item_1.predicate,
                                         item_2.predicate)
     elif (not is_exp_1) and (not is_exp_2):
-        return True
+        # return True if item_1 doesn't have a required match, otherwise check the required match
+        return True if item_1 not in forced_matches else forced_matches[item_1] == forced_matches[item_2]
+
     else:
         return False
     
 # need to change the pair stuff into match stuff
 #TODO: add a possibility to pass a filter function as in SME
-def create_all_possible_matches(case_1, case_2):
+def create_all_possible_matches(case_1, case_2, forced_matches):
     """
         Constructs possible match as a cross product of all items
         for every pair, it checks whether it is a possible match
@@ -241,11 +246,23 @@ def create_all_possible_matches(case_1, case_2):
     matches = set()
     for exp_1 in exp_list_1:
         for exp_2 in exp_list_2:
-            new_matches = match_expression(exp_1, exp_2)
+            new_matches = match_expression(exp_1, exp_2, forced_matches)
             matches = set.union(matches, new_matches)
+
+    # if forced matches are provided, check they they are all fulfilled
+    if len(forced_matches) > 0:
+        tmp_forced_matches = copy(forced_matches)
+        for item in matches:
+            if isinstance(item.base, sc.Entity) and item.base in tmp_forced_matches:
+                del tmp_forced_matches[item.base]
+
+        # if anything is left in tmp_forced_matches, that means we haven't matched something
+        if len(tmp_forced_matches) > 0:
+            raise Exception(f"Not every forced match was possible: {tmp_forced_matches}")
+
     return sorted(matches, key=str)
     
-def match_expression(exp_1, exp_2):
+def match_expression(exp_1, exp_2, forced_matches):
     """
         Match the two expressions and their arguments (not predicates)
     """
@@ -254,7 +271,7 @@ def match_expression(exp_1, exp_2):
     args_1 = exp_1.args
     args_2 = exp_2.args
     pair_list = [(exp_1, exp_2)] + list(zip(args_1, args_2))
-    if all([are_matchable(pair[0], pair[1]) for pair in pair_list]):
+    if all([are_matchable(pair[0], pair[1], forced_matches) for pair in pair_list]):
         match_list = [Match(pair[0], pair[1]) for pair in pair_list]
         return set(match_list)
     else:

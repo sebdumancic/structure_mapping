@@ -147,6 +147,12 @@ class Expression:
         new_copy.evidences = copy.copy(self.evidences)
         return new_copy
     
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Expression):
+            return self.base == __o.base and self.target == __o.target
+        else:
+            return False
+    
 #TODO: make a distinction between entities and constants?
 class Entity: 
     """ """
@@ -157,11 +163,17 @@ class Entity:
     def list_form(self):
         return self.name
 
-    # def __hash__(self):
-    #     return hash(self.name)
+    def __hash__(self):
+        return hash(self.name)
 
     def __repr__(self):
         return '<' + self.name + '>'
+    
+    def __eq__(self, __o: object) -> bool:
+        if isinstance(__o, Entity):
+            return self.name  == __o.name
+        else:
+            return False
     
 class Predicate:
     """ """
