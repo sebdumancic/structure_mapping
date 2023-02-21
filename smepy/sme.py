@@ -229,7 +229,7 @@ def are_matchable(item_1, item_2, forced_matches):
                                         item_2.predicate)
     elif (not is_exp_1) and (not is_exp_2):
         # return True if item_1 doesn't have a required match, otherwise check the required match
-        return True if item_1 not in forced_matches else forced_matches[item_1] == forced_matches[item_2]
+        return True if item_1 not in forced_matches else forced_matches[item_1] == item_2
 
     else:
         return False
@@ -251,7 +251,7 @@ def create_all_possible_matches(case_1, case_2, forced_matches):
 
     # if forced matches are provided, check they they are all fulfilled
     if len(forced_matches) > 0:
-        tmp_forced_matches = copy(forced_matches)
+        tmp_forced_matches = {k:v for k,v in forced_matches.items()}
         for item in matches:
             if isinstance(item.base, sc.Entity) and item.base in tmp_forced_matches:
                 del tmp_forced_matches[item.base]

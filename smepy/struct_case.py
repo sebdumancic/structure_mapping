@@ -139,8 +139,8 @@ class Expression:
     def __repr__(self):
         return '<' + self.name + ', ' + repr(self.weight) + '>'
 
-    # def __hash__(self):
-    #     return hash(self.name)
+    def __hash__(self):
+        return hash(self.__repr__())
         
     def __deepcopy__(self, memo):
         new_copy = copy.copy(self)
@@ -149,7 +149,7 @@ class Expression:
     
     def __eq__(self, __o: object) -> bool:
         if isinstance(__o, Expression):
-            return self.base == __o.base and self.target == __o.target
+            return self.predicate == __o.predicate and all([k == v for k,v in zip(self.args, __o.args)])
         else:
             return False
     
